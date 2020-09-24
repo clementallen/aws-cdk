@@ -1,3 +1,4 @@
+import { ISecurityGroup } from '@aws-cdk/aws-ec2';
 import { Ec2Service, Ec2TaskDefinition } from '@aws-cdk/aws-ecs';
 import { Construct } from '@aws-cdk/core';
 import { NetworkLoadBalancedServiceBase, NetworkLoadBalancedServiceBaseProps } from '../base/network-load-balanced-service-base';
@@ -60,6 +61,13 @@ export interface NetworkLoadBalancedEc2ServiceProps extends NetworkLoadBalancedS
    * @default - No memory reserved.
    */
   readonly memoryReservationMiB?: number;
+
+  /**
+   * The security groups to associate with the service. If you do not specify a security group, the default security group for the VPC is used.
+   *
+   * @default - A new security group is created.
+   */
+  readonly securityGroups?: ISecurityGroup[];
 }
 
 /**
@@ -129,6 +137,7 @@ export class NetworkLoadBalancedEc2Service extends NetworkLoadBalancedServiceBas
       propagateTags: props.propagateTags,
       enableECSManagedTags: props.enableECSManagedTags,
       cloudMapOptions: props.cloudMapOptions,
+      securityGroups: props.securityGroups,
     });
     this.addServiceAsTarget(this.service);
   }

@@ -1,3 +1,4 @@
+import { ISecurityGroup } from '@aws-cdk/aws-ec2';
 import { FargatePlatformVersion, FargateService, FargateTaskDefinition } from '@aws-cdk/aws-ecs';
 import { NetworkTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Construct } from '@aws-cdk/core';
@@ -80,6 +81,13 @@ export interface NetworkMultipleTargetGroupsFargateServiceProps extends NetworkM
    * @default Latest
    */
   readonly platformVersion?: FargatePlatformVersion;
+
+  /**
+   * The security groups to associate with the service. If you do not specify a security group, the default security group for the VPC is used.
+   *
+   * @default - A new security group is created.
+   */
+  readonly securityGroups?: ISecurityGroup[];
 }
 
 /**
@@ -179,6 +187,7 @@ export class NetworkMultipleTargetGroupsFargateService extends NetworkMultipleTa
       enableECSManagedTags: props.enableECSManagedTags,
       cloudMapOptions: props.cloudMapOptions,
       platformVersion: props.platformVersion,
+      securityGroups: props.securityGroups,
     });
   }
 }

@@ -1,4 +1,5 @@
-import { Ec2Service, Ec2TaskDefinition } from '@aws-cdk/aws-ecs';
+import { ISecurityGroup } from '@aws-cdk/aws-ec2';
+import { Ec2Service, Ec2TaskDefinition, NetworkMode } from '@aws-cdk/aws-ecs';
 import { Construct } from '@aws-cdk/core';
 import { ApplicationLoadBalancedServiceBase, ApplicationLoadBalancedServiceBaseProps } from '../base/application-load-balanced-service-base';
 
@@ -62,6 +63,22 @@ export interface ApplicationLoadBalancedEc2ServiceProps extends ApplicationLoadB
    * @default - No memory reserved.
    */
   readonly memoryReservationMiB?: number;
+
+  /**
+   * The security groups to associate with the service. If you do not specify a security group, the default security group for the VPC is used.
+   *
+   * @default - A new security group is created.
+   */
+  readonly securityGroups?: ISecurityGroup[];
+
+  /**
+   * The Docker networking mode to use for the containers in the task.
+   *
+   * The valid values are none, bridge, awsvpc, and host.
+   *
+   * @default - NetworkMode.Bridge for EC2 tasks, AwsVpc for Fargate tasks.
+   */
+  readonly networkMode?: NetworkMode;
 }
 
 /**
@@ -94,6 +111,7 @@ export class ApplicationLoadBalancedEc2Service extends ApplicationLoadBalancedSe
         executionRole: taskImageOptions.executionRole,
         taskRole: taskImageOptions.taskRole,
         family: taskImageOptions.family,
+        networkMode: props.networkMode,
       });
 
       // Create log driver if logging is enabled
@@ -131,6 +149,7 @@ export class ApplicationLoadBalancedEc2Service extends ApplicationLoadBalancedSe
       propagateTags: props.propagateTags,
       enableECSManagedTags: props.enableECSManagedTags,
       cloudMapOptions: props.cloudMapOptions,
+      securityGroups: props.securityGroups,
     });
     this.addServiceAsTarget(this.service);
   }

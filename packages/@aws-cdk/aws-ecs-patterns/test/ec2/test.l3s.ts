@@ -1145,4 +1145,47 @@ export = {
 
     test.done();
   },
+
+  'test ECS uses provided service security group'(test: Test) {
+    // GIVEN
+    const stack = new cdk.Stack();
+    const vpc = new ec2.Vpc(stack, 'VPC');
+    const cluster = new ecs.Cluster(stack, 'Cluster', { vpc });
+    const securityGroup = new ec2.SecurityGroup(stack, 'SecurityGroup', {
+      vpc,
+      allowAllOutbound: false,
+      description: 'Example',
+    });
+    cluster.addCapacity('DefaultAutoScalingGroup', { instanceType: new ec2.InstanceType('t2.micro') });
+
+    // WHEN
+    new ecsPatterns.ApplicationLoadBalancedEc2Service(stack, 'Service', {
+      cluster,
+      memoryReservationMiB: 1024,
+      taskImageOptions: {
+        image: ecs.ContainerImage.fromRegistry('test'),
+      },
+      securityGroups: [securityGroup],
+      networkMode: ecs.NetworkMode.AWS_VPC,
+    });
+
+    // THEN
+    expect(stack).to(haveResource('AWS::EC2::SecurityGroup', {
+      GroupDescription: 'Example',
+      SecurityGroupEgress: [
+        {
+          CidrIp: '255.255.255.255/32',
+          Description: 'Disallow all traffic',
+          FromPort: 252,
+          IpProtocol: 'icmp',
+          ToPort: 86,
+        },
+      ],
+      VpcId: {
+        Ref: 'VPCB9E5F0B4',
+      },
+    }));
+
+    test.done();
+  },
 };

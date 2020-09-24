@@ -1,3 +1,4 @@
+import { ISecurityGroup } from '@aws-cdk/aws-ec2';
 import { Ec2Service, Ec2TaskDefinition } from '@aws-cdk/aws-ecs';
 import { NetworkTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Construct } from '@aws-cdk/core';
@@ -56,6 +57,13 @@ export interface NetworkMultipleTargetGroupsEc2ServiceProps extends NetworkMulti
    * @default - No memory reserved.
    */
   readonly memoryReservationMiB?: number;
+
+  /**
+   * The security groups to associate with the service. If you do not specify a security group, the default security group for the VPC is used.
+   *
+   * @default - A new security group is created.
+   */
+  readonly securityGroups?: ISecurityGroup[];
 }
 
 /**
@@ -146,6 +154,7 @@ export class NetworkMultipleTargetGroupsEc2Service extends NetworkMultipleTarget
       propagateTags: props.propagateTags,
       enableECSManagedTags: props.enableECSManagedTags,
       cloudMapOptions: props.cloudMapOptions,
+      securityGroups: props.securityGroups,
     });
   }
 }
