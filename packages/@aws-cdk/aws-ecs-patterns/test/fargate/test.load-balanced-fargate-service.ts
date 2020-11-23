@@ -1,7 +1,7 @@
 import { expect, haveResource, haveResourceLike, SynthUtils } from '@aws-cdk/assert';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
-import { ApplicationLoadBalancer, ApplicationProtocol, NetworkLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
+import { ApplicationLoadBalancer, ApplicationProtocol, NetworkLoadBalancer, SslPolicy } from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as iam from '@aws-cdk/aws-iam';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as cdk from '@aws-cdk/core';
@@ -226,6 +226,24 @@ export = {
     // THEN
     const serviceTaskDefinition = SynthUtils.synthesize(stack).template.Resources.Service9571FDD8;
     test.deepEqual(serviceTaskDefinition.Properties.HealthCheckGracePeriodSeconds, 600);
+    test.done();
+  },
+
+  'setting HTTP protocol and providing sslPolicy throws error'(test: Test) {
+    // GIVEN
+    const stack = new cdk.Stack();
+    const vpc = new ec2.Vpc(stack, 'VPC');
+    const sslPolicy = SslPolicy.TLS12;
+
+    // WHEN
+    test.throws(() => new ecsPatterns.ApplicationLoadBalancedFargateService(stack, 'Service', {
+      vpc,
+      taskImageOptions: {
+        image: ecs.ContainerImage.fromRegistry('/aws/aws-example-app'),
+      },
+      sslPolicy,
+    }));
+
     test.done();
   },
 

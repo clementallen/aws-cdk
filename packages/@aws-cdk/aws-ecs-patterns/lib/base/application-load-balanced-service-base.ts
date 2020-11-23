@@ -3,7 +3,7 @@ import { IVpc } from '@aws-cdk/aws-ec2';
 import { AwsLogDriver, BaseService, CloudMapOptions, Cluster, ContainerImage, ICluster, LogDriver, PropagatedTagSource, Secret } from '@aws-cdk/aws-ecs';
 import {
   ApplicationListener, ApplicationLoadBalancer, ApplicationProtocol, ApplicationTargetGroup,
-  IApplicationLoadBalancer, ListenerCertificate, ListenerAction, AddApplicationTargetsProps,
+  IApplicationLoadBalancer, ListenerCertificate, ListenerAction, AddApplicationTargetsProps, SslPolicy,
 } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { IRole } from '@aws-cdk/aws-iam';
 import { ARecord, IHostedZone, RecordTarget, CnameRecord } from '@aws-cdk/aws-route53';
@@ -212,6 +212,13 @@ export interface ApplicationLoadBalancedServiceBaseProps {
    * @default ApplicationLoadBalancedServiceRecordType.ALIAS
    */
   readonly recordType?: ApplicationLoadBalancedServiceRecordType;
+
+  /**
+   * Specifies the SSL Policy type which is attached to the Application Load Balancer Listeners
+   *
+   * @default - No overriding SslPolicy is provided
+   */
+  readonly sslPolicy?: SslPolicy;
 }
 
 export interface ApplicationLoadBalancedTaskImageOptions {
@@ -377,6 +384,9 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
     if (protocol !== ApplicationProtocol.HTTPS && props.redirectHTTP === true) {
       throw new Error('The HTTPS protocol must be used when redirecting HTTP traffic');
     }
+    if (protocol === ApplicationProtocol.HTTP && props.sslPolicy !== undefined) {
+      throw new Error('The HTTPS protocol must be used when an SSL Policy is given');
+    }
 
     const targetProps: AddApplicationTargetsProps = {
       protocol: props.targetProtocol ?? ApplicationProtocol.HTTP,
@@ -386,6 +396,7 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
       protocol,
       port: props.listenerPort,
       open: props.openListener ?? true,
+      sslPolicy: props.sslPolicy,
     });
     this.targetGroup = this.listener.addTargets('ECS', targetProps);
 
