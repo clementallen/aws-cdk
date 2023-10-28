@@ -2,7 +2,7 @@ import { Construct } from 'constructs';
 import { CfnStreamConsumer } from './kinesis.generated';
 import { Stream } from './stream';
 import * as iam from '../../aws-iam';
-import { ArnFormat, IResource, Resource, Stack } from '../../core';
+import { Fn, IResource, Resource } from '../../core';
 
 const READ_OPERATIONS = [ // TODO
   'kinesis:DescribeStreamSummary',
@@ -112,7 +112,7 @@ export interface ConsumerProps {
 }
 
 /**
- * A Kinesis consumer. Can be encrypted with a KMS key.
+ * A Kinesis consumer.
  */
 export class Consumer extends ConsumerBase {
 
@@ -121,7 +121,7 @@ export class Consumer extends ConsumerBase {
    *
    * @param scope The parent creating construct (usually `this`).
    * @param id The construct's name
-   * @param consumerArn Consumer ARN (i.e. arn:aws:kinesis:<region>:<account-id>:stream/Foo/consumer/Bar/<timestamp>) TODO
+   * @param consumerArn Consumer ARN (i.e. arn:aws:kinesis:<region>:<account-id>:stream/Foo/consumer/Bar:<timestamp>)
    */
   public static fromConsumerArn(scope: Construct, id: string, consumerArn: string): IConsumer {
     return Consumer.fromConsumerAttributes(scope, id, { consumerArn });
@@ -137,7 +137,7 @@ export class Consumer extends ConsumerBase {
   public static fromConsumerAttributes(scope: Construct, id: string, attrs: ConsumerAttributes): IConsumer {
     class Import extends ConsumerBase {
       public readonly consumerArn = attrs.consumerArn;
-      public readonly consumerName = Stack.of(scope).splitArn(attrs.consumerArn, ArnFormat.SLASH_RESOURCE_NAME).resourceName!; // TODO
+      public readonly consumerName = extractNameFromArn(attrs.consumerArn);
     }
 
     return new Import(scope, id);
@@ -154,7 +154,7 @@ export class Consumer extends ConsumerBase {
     });
 
     this.consumer = new CfnStreamConsumer(this, 'Resource', {
-      consumerName: props.consumerName || '', // TODO
+      consumerName: this.physicalName,
       streamArn: props.stream.streamArn,
     });
 
@@ -163,6 +163,25 @@ export class Consumer extends ConsumerBase {
       resource: 'stream', // TODO
       resourceName: this.physicalName,
     });
+
     this.consumerName = this.getResourceNameAttribute(this.consumer.ref);
   }
+}
+
+/**
+ * Given an opaque (token) ARN, returns a CloudFormation expression that extracts the script
+ * identifier from the ARN.
+ *
+ * Consumer ARNs look like this:
+ *
+ *   arn:aws:kinesis:region:account-id:stream/stream-name/consumer/consumer-name:timestamp
+ *
+ * ..which means that in order to extract the `consumer-name` component from the ARN, we can
+ * split the ARN using ":" and select the component in index 5 then split using "/" and select the component in index 3.
+ *
+ * @returns the script identifier from his ARN
+ */
+function extractNameFromArn(arn: string) {
+  const splitValue = Fn.select(5, Fn.split(':', arn));
+  return Fn.select(3, Fn.split('/', splitValue));
 }
